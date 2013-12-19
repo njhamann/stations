@@ -2,6 +2,8 @@ var stApp = stApp || {};
 stApp.remote = {};
 stApp.remote = angular.module('stRemote', []);
 stApp.remote.run(['$rootScope', 'mediaQuery', function($rootScope, mobileQuery){
+    $rootScope.isCasting = 0;
+    $rootScope.canCast = 0;
     $rootScope.isMobile = mobileQuery.isMobile();
     mobileQuery.watchMobile($rootScope, 'isMobile');
     $rootScope.showPlaylists = 1;
@@ -57,15 +59,18 @@ stApp.remote.controller('Player', [
     function($scope){
         $scope.playlist = [];
 
-        $scope.currentMediaIndex = 0;
+        //$scope.currentMediaIndex = 0;
         
+        /*
         $scope.startPlaylist = function(){
             //$scope.loadMedia(0);
         };
-        
+        */
+
         var playerReadyInterval;
         var disablePlayerReadyInterval;
 
+        /*
         function forcePlay() {
             playerReadyInterval = window.setInterval(function(){
                 $scope.player.playVideo();
@@ -79,8 +84,9 @@ stApp.remote.controller('Player', [
                 window.clearInterval(playerReadyInterval);
                 window.clearInterval(disablePlayerReadyInterval);
             }, 1000);
-        } 
-        
+        }
+        */
+        /* 
         $scope.loadMedia = function(index){
             if(!$scope.playlist.length) return;
             if($scope.playlist[index]){
@@ -95,10 +101,17 @@ stApp.remote.controller('Player', [
             //$scope.player.playVideo();
             forcePlay(); 
         };
+        */
+        
+        $scope.getCurrentMedia = function(){
+            $scope.currentMediaIndex = $scope.player.getPlaylistIndex(); 
+            $scope.currentMedia = $scope.playlist[$scope.currentMediaIndex];
+            console.log($scope.currentMedia);
+        };
 
         $scope.$on('playlistChanged', function(e, playlist){
             $scope.playlist = playlist;
-            $scope.startPlaylist();
+            //$scope.startPlaylist();
         });
         
         $scope.$on('stopPlayer', function(e){
@@ -154,11 +167,12 @@ stApp.remote.directive('ytPlayer', function(){
     var onPlayerReady = function(){}; 
     var onPlayerStateChange = function(scope){
         if (event.data == YT.PlayerState.PLAYING) {
+            scope.getCurrentMedia();
         } else if (event.data == YT.PlayerState.PAUSED) {
         } else if (event.data == YT.PlayerState.BUFFERING) {
         } else if (event.data == YT.PlayerState.CUED) {
         } else if (event.data == YT.PlayerState.ENDED) {
-            scope.currentMediaIndex++;
+            //scope.currentMediaIndex++;
             //scope.loadMedia(scope.currentMediaIndex);
         }
     };

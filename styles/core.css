@@ -21,6 +21,7 @@
 .navbar-fixed-bottom{
     border-top:2px solid #DEDCE2;
     background:#FFF;
+    left: 300px;
 }
 
 .navbar-brand{
@@ -103,10 +104,13 @@ ul#playlists li.selected{
         margin: 0 auto;
         width: 120px;
     }
-    .navbar-nav.navbar-right:last-child{
+    .navbar-static-top .navbar-nav.navbar-right:last-child{
         margin-top:-50px;
     }
     ul#playlists li.selected{
         background:#FFF;
+    }
+    .navbar-fixed-bottom{
+        left: 0;
     }
 }

@@ -23,7 +23,7 @@
                 <div class="navbar-header">
                     <a class="navbar-brand" href="#">STATIONS</a>
                 </div>
-                <ul class="nav navbar-nav navbar-right">
+                <ul class="nav navbar-nav navbar-right" ng-show="canCast">
                     <li>
                         <a href="#" class="dropdown-toggle cast-image" data-toggle="dropdown">
                             <img src="icons/drawable-mdpi/ic_media_route_off_holo_light.png"/>
@@ -73,7 +73,8 @@
         </div>
     </div><!-- container-full -->
     
-    <div ng-controller="PlayerControls" style="display:none;">
+        <div class="right" ng-hide="isMobile && showPlaylists">
+    <div ng-controller="PlayerControls" ng-hide="isMobile && showPlaylists">
         <div class="navbar navbar-fixed-bottom" role="navigation">
             <div class="container-full">
                 <div class="collapse navbar-collapse">
@@ -82,7 +83,7 @@
                         <li><a href="#" onclick="control.pauseMedia()">Pause</a></li>
                     </ul>
                     <ul class="nav navbar-nav navbar-right">
-                        <li><a href="#" id="stop_casting">Stop Casting</a></li>
+                        <li><a href="#" id="stop_casting" ng-show="canCast && isCasting">Stop Casting</a></li>
                     </ul>
                 </div>
             </div><!-- container-full -->
@@ -90,10 +91,10 @@
     </div>
     
     <script src="javascripts/underscore-min.js"></script>
-    <script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.5/angular.min.js"></script> 
+    <script src="javascripts/jquery-2.0.3.min.js"></script>
+    <script src="javascripts/angular.min.js"></script> 
     <script src="vendors/bootstrap/js/bootstrap.min.js"></script>
-    <script src="remote.js"></script>
+    <script src="javascripts/remote.js"></script>
 
 </body>
 </html>
