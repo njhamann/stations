@@ -58,17 +58,13 @@ stApp.remote.controller('Player', [
     '$scope', 
     function($scope){
         $scope.playlist = [];
-
-        //$scope.currentMediaIndex = 0;
+        $scope.currentMediaIndex;
         
         /*
         $scope.startPlaylist = function(){
             //$scope.loadMedia(0);
         };
         */
-
-        var playerReadyInterval;
-        var disablePlayerReadyInterval;
 
         /*
         function forcePlay() {
@@ -103,12 +99,42 @@ stApp.remote.controller('Player', [
         };
         */
         
+        $scope.onPlayerStateChange = function(e){
+            $scope.currentStatus = e.data;
+            if (e.data == YT.PlayerState.PLAYING) {
+                $scope.getCurrentMedia();
+            } else if (e.data == YT.PlayerState.PAUSED) {
+            } else if (e.data == YT.PlayerState.BUFFERING) {
+            } else if (e.data == YT.PlayerState.CUED) {
+            } else if (e.data == YT.PlayerState.ENDED) {
+                //scope.currentMediaIndex++;
+                //scope.loadMedia(scope.currentMediaIndex);
+            }
+
+            $scope.$root.$broadcast('playerStateChanged', e.data);
+        };
+         
         $scope.getCurrentMedia = function(){
             $scope.currentMediaIndex = $scope.player.getPlaylistIndex(); 
             $scope.currentMedia = $scope.playlist[$scope.currentMediaIndex];
-            console.log($scope.currentMedia);
         };
 
+        $scope.$watch('currentMediaIndex', function(i){
+
+        });
+        
+        $scope.$on('performPlayerAction', function(e, state){
+            if (state == 'previous') {
+                $scope.player.previousVideo();
+            } else if (state == 'next') {
+                $scope.player.nextVideo();
+            } else if (state == 'play') {
+                $scope.player.playVideo();
+            } else if (state == 'pause') {
+                $scope.player.pauseVideo();
+            }
+        });
+        
         $scope.$on('playlistChanged', function(e, playlist){
             $scope.playlist = playlist;
             //$scope.startPlaylist();
@@ -137,6 +163,27 @@ stApp.remote.controller('MediaDetail', [
 stApp.remote.controller('PlayerControls', [
     '$scope', 
     function($scope){
+        $scope.isPlaying;
+        $scope.performPlayerAction = function(action){
+            $scope.$root.$broadcast('performPlayerAction', action);
+        };
+        
+        $scope.$on('playerStateChanged', function(e, state){
+            console.log(state);
+            $scope.currentStatus = state;
+            $scope.$apply(function(){
+                if (state == YT.PlayerState.PLAYING) {
+                    $scope.isPlaying = 1;
+                } else if (state == YT.PlayerState.PAUSED) {
+                    $scope.isPlaying = 0;
+                } else if (state == YT.PlayerState.BUFFERING) {
+                    //need to disable
+                } else if (state == YT.PlayerState.CUED) {
+                } else if (state == YT.PlayerState.ENDED) {
+                    //need to disable
+                }
+            });
+        });
     }
 ]);
 
@@ -164,18 +211,6 @@ stApp.remote.directive('windowResize', function(){
 });
 
 stApp.remote.directive('ytPlayer', function(){
-    var onPlayerReady = function(){}; 
-    var onPlayerStateChange = function(scope){
-        if (event.data == YT.PlayerState.PLAYING) {
-            scope.getCurrentMedia();
-        } else if (event.data == YT.PlayerState.PAUSED) {
-        } else if (event.data == YT.PlayerState.BUFFERING) {
-        } else if (event.data == YT.PlayerState.CUED) {
-        } else if (event.data == YT.PlayerState.ENDED) {
-            //scope.currentMediaIndex++;
-            //scope.loadMedia(scope.currentMediaIndex);
-        }
-    };
 
     return function(scope, elm, attrs){
 
@@ -186,6 +221,8 @@ stApp.remote.directive('ytPlayer', function(){
         window.onYouTubeIframeAPIReady = function() {
             scope.playerReady = 1;
         };
+    
+        var onPlayerReady = function(){}; 
 
         scope.$watch('playlist', function(playlist){  
             if(!scope.playerReady) return;
@@ -197,12 +234,12 @@ stApp.remote.directive('ytPlayer', function(){
                     height: '400',
                     //videoId: playlist[0].source_id,
                     playerVars: {
-                        playlist: ids
+                        playlist: idsStr
                         //controls: 0
                     },
                     events: {
                         'onReady': onPlayerReady,
-                        'onStateChange': onPlayerStateChange
+                        'onStateChange': scope.onPlayerStateChange
                     }
                 });
             }else{
@@ -366,7 +403,7 @@ function onReceiverList(list) {
         receiverDiv.innerHTML = temp;
     } else {
         console.log("receiver list empty");
-        document.getElementById("receiver_msg").innerHTML = "No Chromecast devices found";
+        //document.getElementById("receiver_msg").innerHTML = "No Chromecast devices found";
     }
 }
 

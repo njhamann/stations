@@ -59,28 +59,33 @@
                     </div>
                 </div>
             </div>
+            <!--
             <div ng-controller="Playlist">
                <div class="content-container">
                    <p>Media List</p>
                 </div>
             </div>
+            -->
             <div ng-controller="MediaDetail">
                <div class="content-container">
-                <p>Currently Playing</p>
-                <p>Content Column: Fluid Demo content nothing to read here Welcome to Dynamic Drive CSS Library This is just some filler text Welcome to Dynamic Drive CSS Library This is just some filler text This is just some filler text Demo content nothing to read here Welcome to Dynamic Drive CSS Library Welcome to Dynamic Drive CSS Library Demo content nothing to read here This is just some filler text Demo content nothing to read here This is just some filler text Welcome to Dynamic Drive CSS Library Welcome to Dynamic Drive CSS Library This is just some filler text This is just some filler text Demo content nothing to read here Demo content nothing to read here Welcome to Dynamic Drive CSS Library Welcome to Dynamic Drive CSS Library Welcome to Dynamic Drive CSS Library Welcome to Dynamic Drive CSS Library Demo content nothing to read here Welcome to Dynamic Drive CSS Library Welcome to Dynamic Drive CSS Library This is just some filler text This is just some filler text Demo content nothing to read here Demo content nothing to read here This is just some filler text Welcome to Dynamic Drive CSS Library This is just some filler text Demo content nothing to read here This is just some filler text This is just some filler text This is just some filler text This is just some filler text Welcome to Dynamic Drive CSS Library Welcome to Dynamic Drive CSS Library This is just some filler text Welcome to Dynamic Drive CSS Library This is just some filler text Welcome to Dynamic Drive CSS Library Welcome to Dynamic Drive CSS Library</p>
+                    <div ng-show="media">
+                        <h3>{{media.name}}</h3>
+                        <p>{{media.description}}</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div><!-- container-full -->
     
-        <div class="right" ng-hide="isMobile && showPlaylists">
     <div ng-controller="PlayerControls" ng-hide="isMobile && showPlaylists">
         <div class="navbar navbar-fixed-bottom" role="navigation">
             <div class="container-full">
                 <div class="collapse navbar-collapse">
-                    <ul class="nav navbar-nav">
-                        <li><a href="#" onclick="control.playMedia()">Play</a></li>
-                        <li><a href="#" onclick="control.pauseMedia()">Pause</a></li>
+                    <ul class="nav navbar-nav media-controls">
+                        <li><a href="#" ng-click="performPlayerAction('previous')"><span class="glyphicon glyphicon-fast-backward"></span></a></li>
+                        <li><a href="#" ng-click="performPlayerAction('play')" ng-show="!isPlaying"><span class="glyphicon glyphicon-play"></span></a></li>
+                        <li><a href="#" ng-click="performPlayerAction('pause')" ng-show="isPlaying"><span class="glyphicon glyphicon-pause"></span></a></li>
+                        <li><a href="#" ng-click="performPlayerAction('next')"><span class="glyphicon glyphicon-fast-forward"></span></a></li>
                     </ul>
                     <ul class="nav navbar-nav navbar-right">
                         <li><a href="#" id="stop_casting" ng-show="canCast && isCasting">Stop Casting</a></li>
