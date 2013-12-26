@@ -37,9 +37,9 @@
     </div>
 
     <div class="container-full">
-        <div class="left" ng-hide="isMobile && !showPlaylists">
+        <div class="left" ng-controller="LeftPanel" ng-hide="isMobile && !showPlaylists">
             <div ng-controller="Playlists">
-                <p class="list-header">PLAYLISTS</p>
+                <p class="list-header">STATIONS</p>
                 <ul id="playlists" class="list-unstyled">
                     <li 
                         ng-repeat="playlist in playlists" 
@@ -52,32 +52,49 @@
                 </ul>
             </div>
         </div>
-        <div class="right" ng-hide="isMobile && showPlaylists">
-            <div ng-controller="Player">
+        <div class="right" ng-controller="RightPanel" ng-hide="isMobile && showPlaylists">
+            <div class="no-playlist-selected" ng-hide="playlistSelected">
+                <p>Please select a station to get started!</p>
+            </div>
+            <div ng-controller="Player" ng-show="playlistSelected">
                 <div id="yt_player_container">
                     <div id="yt_player" yt-player>
                     </div>
                 </div>
             </div>
-            <!--
-            <div ng-controller="Playlist">
-               <div class="content-container">
-                   <p>Media List</p>
-                </div>
-            </div>
-            -->
-            <div ng-controller="MediaDetail">
+            
+            <div class="playlist-content-toggle btn-group" ng-show="playlistSelected">
+                <button type="button" class="btn btn-default" 
+                    ng-click="changePlaylistContent('details')" 
+                    ng-class="{'btn-primary': showDetails}">
+                    Media Details</button>
+                <button type="button" class="btn btn-default" 
+                    ng-click="changePlaylistContent('playlist')" 
+                    ng-class="{'btn-primary': showPlaylist}">
+                    Playlist</button>
+            </div> 
+
+            <div 
+                ng-controller="MediaDetail" 
+                ng-show="playlistSelected && $parent.showDetails">
                <div class="content-container">
                     <div ng-show="media">
-                        <h3>{{media.name}}</h3>
+                        <h4>{{media.title}}</h4>
                         <p>{{media.description}}</p>
                     </div>
                 </div>
-            </div>
+            </div> <!-- MediaDetail -->
+            <div 
+                ng-controller="Playlist" 
+                ng-show="playlistSelected && $parent.showPlaylist">
+               <div class="content-container">
+                   <p></p>
+                </div>
+            </div> <!-- Playlist -->
         </div>
     </div><!-- container-full -->
     
-    <div ng-controller="PlayerControls" ng-hide="isMobile && showPlaylists">
+    <div ng-controller="PlayerControls" ng-hide="(isMobile && showPlaylists) || !isStarted">
         <div class="navbar navbar-fixed-bottom" role="navigation">
             <div class="container-full">
                 <div class="collapse navbar-collapse">

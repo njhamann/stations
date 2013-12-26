@@ -54,50 +54,38 @@ stApp.remote.controller('PlaylistsItem', [
     }
 ]);
 
+stApp.remote.controller('LeftPanel', [
+    '$scope', 
+    function($scope){
+    }
+]);
+
+stApp.remote.controller('RightPanel', [
+    '$scope', 
+    function($scope){
+        $scope.showPlaylist = 0;
+        $scope.showDetails = 1;
+        $scope.changePlaylistContent = function(type) {
+            if(type == 'details'){
+                $scope.showPlaylist = 0;
+                $scope.showDetails = 1;
+            }else{
+                $scope.showPlaylist = 1;
+                $scope.showDetails = 0;
+            }
+        };
+        
+        $scope.$on('playlistChanged', function(e, playlist){
+            $scope.playlistSelected = true;
+        });
+    }
+]);
+
 stApp.remote.controller('Player', [
     '$scope', 
     function($scope){
         $scope.playlist = [];
         $scope.currentMediaIndex;
-        
-        /*
-        $scope.startPlaylist = function(){
-            //$scope.loadMedia(0);
-        };
-        */
-
-        /*
-        function forcePlay() {
-            playerReadyInterval = window.setInterval(function(){
-                $scope.player.playVideo();
-            }, 1000);
-            
-            disablePlayerReadyInterval = window.setInterval(function(){
-                if ($scope.player.getCurrentTime() < 1.0) {
-                    return;
-                }
-                // Video started...
-                window.clearInterval(playerReadyInterval);
-                window.clearInterval(disablePlayerReadyInterval);
-            }, 1000);
-        }
-        */
-        /* 
-        $scope.loadMedia = function(index){
-            if(!$scope.playlist.length) return;
-            if($scope.playlist[index]){
-                var video = $scope.playlist[index];
-                $scope.player.loadVideoById(video.source_id);
-            }else{
-                $scope.currentMediaIndex = 0;
-                var video = $scope.playlist[0];
-                $scope.player.loadVideoById(video.source_id);
-            }
-    
-            //$scope.player.playVideo();
-            forcePlay(); 
-        };
-        */
         
         $scope.onPlayerStateChange = function(e){
             $scope.currentStatus = e.data;
@@ -117,16 +105,17 @@ stApp.remote.controller('Player', [
         $scope.getCurrentMedia = function(){
             $scope.currentMediaIndex = $scope.player.getPlaylistIndex(); 
             $scope.currentMedia = $scope.playlist[$scope.currentMediaIndex];
+            
+            $scope.$root.$broadcast('currentMediaIndexChanged', $scope.currentMediaIndex);
         };
 
-        $scope.$watch('currentMediaIndex', function(i){
-
-        });
         
         $scope.$on('performPlayerAction', function(e, state){
             if (state == 'previous') {
+                //$scope.player.playVideoAt(index:Number)
                 $scope.player.previousVideo();
             } else if (state == 'next') {
+                //$scope.player.playVideoAt(index:Number)
                 $scope.player.nextVideo();
             } else if (state == 'play') {
                 $scope.player.playVideo();
@@ -151,12 +140,24 @@ stApp.remote.controller('Player', [
 stApp.remote.controller('Playlist', [
     '$scope', 
     function($scope){
+        $scope.$on('playlistChanged', function(e, playlist){
+            $scope.playlist = playlist;
+        });
     }
 ]);
 
 stApp.remote.controller('MediaDetail', [
     '$scope', 
     function($scope){
+        
+        $scope.$on('playlistChanged', function(e, playlist){
+            $scope.playlist = playlist;
+        });
+
+        $scope.$on('currentMediaIndexChanged', function(e, index){
+            $scope.currentMediaIndex = index;
+            $scope.media = $scope.playlist[index];
+        });
     }
 ]);
 
@@ -164,9 +165,14 @@ stApp.remote.controller('PlayerControls', [
     '$scope', 
     function($scope){
         $scope.isPlaying;
+        $scope.isStarted;
         $scope.performPlayerAction = function(action){
             $scope.$root.$broadcast('performPlayerAction', action);
         };
+        
+        $scope.$on('playlistChanged', function(e, playlist){
+            $scope.isStarted = true;
+        });
         
         $scope.$on('playerStateChanged', function(e, state){
             console.log(state);
@@ -234,6 +240,7 @@ stApp.remote.directive('ytPlayer', function(){
                     height: '400',
                     //videoId: playlist[0].source_id,
                     playerVars: {
+                        loop: 1,
                         playlist: idsStr
                         //controls: 0
                     },
@@ -242,6 +249,7 @@ stApp.remote.directive('ytPlayer', function(){
                         'onStateChange': scope.onPlayerStateChange
                     }
                 });
+                
             }else{
                 scope.player.cuePlaylist(ids);
             }
@@ -249,7 +257,7 @@ stApp.remote.directive('ytPlayer', function(){
         
         scope.$watch('$root.showPlaylists', function(v){
             if(!v){
-                var $cont = $('#yt_player_container'),
+                var $cont = $('.right'),
                     w = $cont.width(),
                     $ifra = $cont.find('iframe');
         
