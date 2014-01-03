@@ -1,15 +1,19 @@
 var stApp = stApp || {};
 stApp.remote = {};
 stApp.remote = angular.module('stRemote', []);
-stApp.remote.run(['$rootScope', 'mediaQuery', function($rootScope, mobileQuery){
-    $rootScope.isCasting = 0;
-    $rootScope.canCast = 0;
-    $rootScope.isMobile = mobileQuery.isMobile();
-    mobileQuery.watchMobile($rootScope, 'isMobile');
-    $rootScope.showPlaylists = 1;
-    
-    console.log(isNativeApp);
-}]);
+stApp.remote.run([
+    '$rootScope', 
+    'mediaQuery', 
+    'webCasting', 
+    function($rootScope, mobileQuery, webCasting){
+        $rootScope.isMobile = mobileQuery.isMobile();
+        mobileQuery.watchMobile($rootScope, 'isMobile');
+        $rootScope.showPlaylists = 1;
+        
+        $rootScope.control = webCasting($rootScope);
+        $rootScope.control.setEvents();
+    }
+]);
 
 /**
  * controllers
@@ -22,6 +26,15 @@ stApp.remote.controller('Header', [
             $scope.$root.showPlaylists = 1;
             $scope.$root.$broadcast('stopPlayer');
         };
+       
+        $scope.castMedia = function(receiver){
+            $scope.$root.control.castMedia(receiver); 
+        };
+       
+        
+        $scope.$on('receiverList', function(e, list){
+            $scope.receivers = list;
+        });
     }
 ]);
 
@@ -47,9 +60,13 @@ stApp.remote.controller('PlaylistsItem', [
     'mediaQuery',
     function($scope, mediaQuery){
         
-        $scope.startPlaylist = function(index){
+        $scope.startPlaylist = function(){
+            var control = $scope.$root.control;
+            if(control && control.isCasting){
+                control.startPlaylist($scope.playlist);
+            }
             $scope.$root.showPlaylists = 0;
-            $scope.$root.$broadcast('playlistChanged', $scope.playlists[index].items);
+            $scope.$root.$broadcast('playlistChanged', $scope.playlist.items);
         };
         
     }
@@ -168,7 +185,16 @@ stApp.remote.controller('PlayerControls', [
         $scope.isPlaying;
         $scope.isStarted;
         $scope.performPlayerAction = function(action){
-            $scope.$root.$broadcast('performPlayerAction', action);
+            if($scope.$root.control 
+                && $scope.$root.control.isCasting){
+                
+                $scope.$root.control.sendMessage(action); 
+                
+                //pausing player
+                $scope.$root.$broadcast('performPlayerAction', 'pause');
+            }else{
+                $scope.$root.$broadcast('performPlayerAction', action);
+            }
         };
         
         $scope.$on('playlistChanged', function(e, playlist){
@@ -176,7 +202,6 @@ stApp.remote.controller('PlayerControls', [
         });
         
         $scope.$on('playerStateChanged', function(e, state){
-            console.log(state);
             $scope.currentStatus = state;
             $scope.$apply(function(){
                 if (state == YT.PlayerState.PLAYING) {
@@ -242,8 +267,8 @@ stApp.remote.directive('ytPlayer', function(){
                     //videoId: playlist[0].source_id,
                     playerVars: {
                         loop: 1,
-                        playlist: idsStr
-                        //controls: 0
+                        playlist: idsStr,
+                        controls: 0
                     },
                     events: {
                         'onReady': onPlayerReady,
@@ -298,114 +323,123 @@ stApp.remote.factory('mediaQuery', function(){
 });
 
 stApp.remote.factory('webCasting', function(){
-    var applicationID = 'fbecad4f-6140-4245-8a21-7f9e3894ffa4';
-    var playlists;
-    var castApi;
-    var currentActivityId = null;
-    var currentReceiver;
-    var receivers = [];
+    return function(scope){
+        var applicationID = 'fbecad4f-6140-4245-8a21-7f9e3894ffa4';
+        var playlists;
+        var castApi;
+        var currentActivityId = null;
+        var currentReceiver;
+        var receivers = [];
+        
+        //control
+        var control = {};
+        control.playlists;
+        control.setEvents = function(){
+            var _this = this,
+                $doc = $(document);
 
-    //control
-    var control = {};
-    control.playlists;
-    control.setEvents = function(){
-        var _this = this,
-            $doc = $(document);
+            $doc.on('click', 'a#stop_casting', function() {
+                castApi.stopActivity(currentActivityId, function(){
+                    if(currentActivityId){
+                        currentActivityId = null;
+                    }
+                });
+            });
 
-        $doc.on('click', 'a#stop_casting', function() {
-            castApi.stopActivity(currentActivityId, function(){
-                if(currentActivityId){
-                    currentActivityId = null;
+        };
+
+        control.startPlaylist = function(playlist) {
+            castApi.sendMessage(this.currentActivityId, 'channelcast', {
+                type: 'start_playlist',
+                data: {
+                    playlist: playlist
                 }
             });
-        });
+        };
+        
+        control.sendMessage = function(type) {
+            castApi.sendMessage(currentActivityId, 'channelcast', {type: type});
+        };
+        /*
+        control.playMedia = function() {
+            castApi.sendMessage(currentActivityId, 'channelcast', {type: 'play'});
+        };
 
-    };
+        control.pauseMedia = function() {
+            castApi.sendMessage(currentActivityId, 'channelcast', {type: 'pause'});
+        };
+        */
 
-    control.startPlaylist = function(playlist) {
-        castApi.sendMessage(currentActivityId, 'channelcast', {
-            type: 'start_playlist',
-            data: {
-                playlist: playlist
+        control.onMessage = function(event) {
+            console.log(event);
+        };
+
+        control.initializeCastApi = function(){
+            castApi = new cast.Api();
+            castApi.addReceiverListener(applicationID, control.onReceiverList);
+        };
+         
+        control.onReceiverList = function(list) {
+            if( list.length > 0 ) {
+                /*
+                console.log("receiver list" + list);
+                var receiverDiv = document.getElementById('receivers');
+                var temp = ''; 
+
+                for( var i=0; i < list.length; i++ ) {
+                    receivers.push(list[i]);
+                    temp += '<li><a href="#" id="cast' + list[i].id + '" onclick="control.castMedia(' + i + ')">' + list[i].name + '</a></li>';
+                }
+                console.log(temp);
+                receiverDiv.innerHTML = temp;
+                */
+                scope.canCast = true;
+                scope.$root.$broadcast('receiverList', list); 
             }
-        });
-    };
+        };
+        
+        control.castMedia = function(receiver) {
+            console.log(receiver);
+            var _this = this;
+            currentReceiver = receiver;
 
-    control.playMedia = function() {
-        castApi.sendMessage(currentActivityId, 'channelcast', {type: 'play'});
-    };
+            var launchRequest = new cast.LaunchRequest(applicationID, receiver);
+            launchRequest.parameters = '';
 
-    control.pauseMedia = function() {
-        castApi.sendMessage(currentActivityId, 'channelcast', {type: 'pause'});
-    };
+            //var loadRequest = new cast.MediaLoadRequest(currentMedia);
+            //loadRequest.autoplay = true;
 
-    control.onMessage = function(event) {
-        console.log(event);
-    };
+            castApi.launch(launchRequest, function(status) {
+                if (status.status == 'running') {
+                    currentActivityId = status.activityId;
+                    _this.currentActivityId = status.activityId;
+                    _this.isCasting = true;
+                    castApi.sendMessage(_this.currentActivityId, 'channelcast', {type: 'launched'});
+                    castApi.addMessageListener(_this.currentActivityId, 'channelcast', control.onMessage.bind(_this));
+                } else {
 
-    control.initializeCastApi = function(){
-        castApi = new cast.Api();
-        castApi.addReceiverListener(applicationID, control.onReceiverList);
-    };
-    
-    control.onReceiverList = function(list) {
-        if( list.length > 0 ) {
-            console.log("receiver list" + list);
-            var receiverDiv = document.getElementById('receivers');
-            var temp = ''; 
+                    console.log('Launch failed: ' + status.errorString);
+                }
+            });
+        };
 
-            for( var i=0; i < list.length; i++ ) {
-                receivers.push(list[i]);
-                temp += '<li><a href="#" id="cast' + list[i].id + '" onclick="control.castMedia(' + i + ')">' + list[i].name + '</a></li>';
-            }
-            console.log(temp);
-            receiverDiv.innerHTML = temp;
+        
+        if (window.cast && window.cast.isAvailable) {
+            // Already initialized
+            control.initializeCastApi();
         } else {
-            console.log("receiver list empty");
-            //document.getElementById("receiver_msg").innerHTML = "No Chromecast devices found";
-        }
-    }
-    
-    control.castMedia = function(i) {
-        console.log("casting media to" + receivers[i]);
-        var _this = this;
-        currentReceiver = receivers[i];
-
-        var launchRequest = new cast.LaunchRequest(applicationID, receivers[i]);
-        launchRequest.parameters = '';
-
-        //var loadRequest = new cast.MediaLoadRequest(currentMedia);
-        //loadRequest.autoplay = true;
-
-        castApi.launch(launchRequest, function(status) {
-            if (status.status == 'running') {
-                currentActivityId = status.activityId;
-                castApi.sendMessage(currentActivityId, 'channelcast', {type: 'launched'});
-                castApi.addMessageListener(currentActivityId, 'channelcast', control.onMessage.bind(_this));
-            } else {
-                console.log('Launch failed: ' + status.errorString);
-            }
-        });
-    }
-
-    control.setEvents();
-    control.getPlaylists();
-
-    if (window.cast && window.cast.isAvailable) {
-        // Already initialized
-        control.initializeCastApi();
-    } else {
-        // Wait for API to post a message to us
-        window.addEventListener("message", function(event) {
-            if (event.source == window 
-                && event.data 
-                && event.data.source == "CastApi" 
-                && event.data.event == "Hello"){
-                control.initializeCastApi();
-            }
-        });
+            // Wait for API to post a message to us
+            window.addEventListener("message", function(event) {
+                if (event.source == window 
+                    && event.data 
+                    && event.data.source == "CastApi" 
+                    && event.data.event == "Hello"){
+                    control.initializeCastApi();
+                }
+            });
+        };
+        return control;
     };
-
 });
 
 /**

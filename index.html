@@ -23,12 +23,20 @@
                 <div class="navbar-header">
                     <a class="navbar-brand" href="#">STATIONS</a>
                 </div>
-                <ul class="nav navbar-nav navbar-right" ng-show="canCast">
+                <ul class="nav navbar-nav navbar-right" ng-show="receivers.length">
                     <li>
                         <a href="#" class="dropdown-toggle cast-image" data-toggle="dropdown">
                             <img src="icons/drawable-mdpi/ic_media_route_off_holo_light.png"/>
                         </a>
                         <ul class="dropdown-menu" id="receivers">
+                            <li 
+                                ng-repeat="receiver in receivers"
+                                data-id="{{receiver.id}}">
+                                <a href id="cast"
+                                    ng-click="castMedia(receiver)">
+                                {{receiver.name}}
+                                </a>
+                            </li>
                         </ul>
                     </li>
                 </ul>
@@ -44,7 +52,7 @@
                     <li 
                         ng-repeat="playlist in playlists" 
                         ng-controller="PlaylistsItem" 
-                        ng-click="startPlaylist($index)"
+                        ng-click="startPlaylist(playlist)"
                         playlist-item>
                         <h4>{{playlist.name}}</h4>
                         <p>{{playlist.description}}</p>
@@ -124,8 +132,8 @@
         app.initialize();
     </script>
     -->
-    <script type="test/javascript">
-        var isNativeApp = 1;
+    <script type="text/javascript">
+        window.isNativeApp = 0;
     </script>
 
 </body>
